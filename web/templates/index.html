@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Телефонная книга</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .form-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: bold;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #f8f9fa;
+            color: #555;
+            font-weight: bold;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-edit {
+            background: #28a745;
+        }
+        
+        .btn-delete {
+            background: #dc3545;
+        }
+        
+        .alert {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                padding: 15px;
+            }
+            
+            table {
+                font-size: 14px;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+            
+            .actions {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Телефонная книга</h1>
+            <p>Управление контактами</p>
+        </div>
+        
+        <div class="content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="form-section">
+                <h2>{% if edit_id %}Редактировать контакт{% else %}Добавить новый контакт{% endif %}</h2>
+                <form method="POST">
+                    {% if edit_id %}
+                        <input type="hidden" name="edit_id" value="{{ edit_id }}">
+                    {% endif %}
+                    <div class="form-group">
+                        <label for="full_name">ФИО:</label>
+                        <input type="text" id="full_name" name="full_name" value="{{ contact.full_name if contact else '' }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone_number">Телефон:</label>
+                        <input type="tel" id="phone_number" name="phone_number" value="{{ contact.phone_number if contact else '' }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="note">Заметка:</label>
+                        <textarea id="note" name="note">{{ contact.note if contact else '' }}</textarea>
+                    </div>
+                    <button type="submit">{% if edit_id %}Обновить{% else %}Добавить{% endif %}</button>
+                    {% if edit_id %}
+                        <a href="{{ url_for('index') }}" style="margin-left: 10px; text-decoration: none;">
+                            <button type="button">Отмена</button>
+                        </a>
+                    {% endif %}
+                </form>
+            </div>
+            
+            <h2>Список контактов</h2>
+            {% if contacts %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ФИО</th>
+                        <th>Телефон</th>
+                        <th>Заметка</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contact in contacts %}
+                    <tr>
+                        <td>{{ contact.id }}</td>
+                        <td>{{ contact.full_name }}</td>
+                        <td>{{ contact.phone_number }}</td>
+                        <td>{{ contact.note or '-' }}</td>
+                        <td class="actions">
+                            <a href="{{ url_for('edit', id=contact.id) }}">
+                                <button class="btn-edit">Редактировать</button>
+                            </a>
+                            <form method="POST" action="{{ url_for('delete', id=contact.id) }}" style="display: inline;">
+                                <button type="submit" class="btn-delete" onclick="return confirm('Вы уверены, что хотите удалить этот контакт?')">Удалить</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+                <div class="empty">
+                    <p>Нет контактов. Добавьте первый контакт!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
